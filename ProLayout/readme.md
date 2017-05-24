@@ -6,4 +6,4 @@ Kind-Steuerelemente können relativ platziert und gruppiert werden. Der Entwurf 
 
 Dieses Produkt erfordert Profan Unit und Klassen (XProfan 8+).
 
-![](prolayout.jpg)
+![](./prolayout1.jpg)
