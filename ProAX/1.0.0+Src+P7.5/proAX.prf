@@ -1,0 +1,195 @@
+$L
+$P+
+$H proAX-internal.ph
+$H proAX.ph
+'--- Unit für ProAX, einem einfachen ActiveX-Tool für Profan
+'--- René Bühling 5/2006, www.reboo.com
+
+'Def @proAX_closeDLL(0) !"ProAX.dll", "closeDLL"
+Def @proAX_fpCreate(1) !"ProAX.dll", "fpCreate"
+Def @proAX_fpLoadMovie(3) !"ProAX.dll", "fpLoadMovie"
+Def @proAX_fpIntnlCmd(4) !"ProAX.dll", "fpIntnlCmd"
+Def @proAX_fpIntnlCmd2(8) !"ProAX.dll", "fpIntnlCmd2"
+Def @proAX_ErrorFile(2) !"ProAX.dll", "ErrorFile"
+Def @proAX_fpLoadFS(3) !"ProAX.dll", "loadFS"
+Def @proAX_fpListen(2) !"ProAX.dll", "listen"
+Def @proAX_supports(1) !"ProAX.dll", "supports"
+
+declare proAX_dll%
+'Unit initalisieren
+proc ?_begin
+     'Parameter nicht möglich, da external nicht funzt (keine "Session"?)
+     proAX_dll%=usedll("ProAX.dll")
+endproc
+
+'Registrieren
+proc ?_reg
+     parameters
+endproc
+
+'Unit deinitialisieren
+proc ?_end
+     'proAX_closeDLL()
+     freedll proAX_dll%
+endproc
+
+proc ?_supportsFP
+     parameters version&
+     return proAX_supports(version&)
+endproc
+
+
+CLASS FlashPlayer = Handle&, FlashPlayer@, Destroy@, LoadMovieNum@, Play@, Stop@, GetCurrentFrame@, \
+                    GotoAndStop@, GotoAndPlay@, GetLoop@, SetLoop@, GetMenu@, SetMenu@, \
+                    GetQuality@, SetQuality@, GetScale@, SetScale@, GetPlay@, GetTotalFrames@, \
+                    GetReadyState@, Pan@, Zoom@, GetPercentLoaded@, SetVar@, SetListener@, \
+                    GetNextFSCommand@, CountFSCommands@, FSCmd$(255), FSArgs$(255)
+
+proc FlashPlayer.FlashPlayer
+     parameters parentHwnd&
+     .Handle&=proAX_fpCreate(parentHwnd&)
+endproc
+
+proc FlashPlayer.Destroy
+     proAX_fpIntnlCmd(.Handle&,~PAX_FPFREE,0,0)
+     .Handle&=0
+endproc
+
+proc FlashPlayer.LoadMovieNum
+     parameters url$, level%
+
+     declare b#
+     dim b#, 255
+     String b#,0=url$
+     proAX_fpLoadMovie(.Handle&,b#,level%)
+     dispose b#
+endproc
+
+proc FlashPlayer.Play
+     proAX_fpIntnlCmd(.Handle&,~PAX_FPPLAY,0,0)
+endproc
+
+proc FlashPlayer.Stop
+     proAX_fpIntnlCmd(.Handle&,~PAX_FPSTOP,0,0)
+endproc
+
+proc FlashPlayer.GetCurrentFrame
+     return proAX_fpIntnlCmd(.Handle&,~PAX_FPGETFRAMENUM,0,0)
+endproc
+
+proc FlashPlayer.GotoAndPlay
+     parameters frame%
+     .Stop()
+     proAX_fpIntnlCmd(.Handle&,~PAX_FPSETFRAMENUM,frame%,0)
+     .Play()
+endproc
+
+proc FlashPlayer.GotoAndStop
+     parameters frame%
+     .Stop()
+     proAX_fpIntnlCmd(.Handle&,~PAX_FPSETFRAMENUM,frame%,0)
+endproc
+
+proc FlashPlayer.GetLoop
+     return proAX_fpIntnlCmd(.Handle&,~PAX_FPGETLOOP,0,0)
+endproc
+
+proc FlashPlayer.SetLoop
+     parameters loop%
+     return proAX_fpIntnlCmd(.Handle&,~PAX_FPSETLOOP,loop%,0)
+endproc
+
+proc FlashPlayer.GetMenu
+     return proAX_fpIntnlCmd(.Handle&,~PAX_FPGETMENU,0,0)
+endproc
+
+proc FlashPlayer.SetMenu
+     parameters mnu%
+     return proAX_fpIntnlCmd(.Handle&,~PAX_FPSETMENU,mnu%,0)
+endproc
+
+proc FlashPlayer.GetQuality
+     return proAX_fpIntnlCmd(.Handle&,~PAX_FPGETQUALITY,0,0)
+endproc
+
+proc FlashPlayer.SetQuality
+     parameters q%
+     return proAX_fpIntnlCmd(.Handle&,~PAX_FPSETQUALITY,q%,0)
+endproc
+
+proc FlashPlayer.GetScale
+     return proAX_fpIntnlCmd(.Handle&,~PAX_FPGETSCALE,0,0)
+endproc
+
+proc FlashPlayer.SetScale
+     parameters s%
+     return proAX_fpIntnlCmd(.Handle&,~PAX_FPSETSCALE,s%,0)
+endproc
+
+proc FlashPlayer.GetPlay
+     return proAX_fpIntnlCmd(.Handle&,~PAX_FPGETPLAY,0,0)
+endproc
+
+proc FlashPlayer.GetTotalFrames
+     return proAX_fpIntnlCmd(.Handle&,~PAX_FPGETTOTALFRAMES,0,0)
+endproc
+
+proc FlashPlayer.GetReadyState
+     return proAX_fpIntnlCmd(.Handle&,~PAX_FPGETREADYSTATE,0,0)
+endproc
+
+proc FlashPlayer.Pan
+     parameters fpx%, fpy%, pantype%
+
+     if pantype%=~pax_fpPixel
+        proAX_fpIntnlCmd(.Handle&,~PAX_FPSETPANPIXEL,fpx%,fpy%)
+     else
+        proAX_fpIntnlCmd(.Handle&,~PAX_FPSETPANPERCENT,fpx%,fpy%)
+     endif
+endproc
+
+proc FlashPlayer.Zoom
+     parameters zs%
+     proAX_fpIntnlCmd(.Handle&,~PAX_FPSETZOOM,zs%,0)
+endproc
+
+proc FlashPlayer.GetPercentLoaded
+     return proAX_fpIntnlCmd(.Handle&,~PAX_FPGETPERCENTLOADED,0,0)
+endproc
+
+proc FlashPlayer.SetVar
+     parameters name$, value$
+     
+     declare b#,c#
+     dim b#, 255
+     dim c#, 255
+     String b#,0=name$
+     String c#,0=value$
+     proAX_fpIntnlCmd2(.Handle&, ~PAX_FPSETVAR,b#,c#,0,0,0,0)
+     dispose b#
+     dispose c#
+endproc
+
+proc FlashPlayer.SetListener
+     parameters lisHan&
+     proAX_fpListen(.Handle&, lisHan&)
+endproc
+
+proc FlashPlayer.GetNextFSCommand
+     declare b#,c#, erg$
+     dim b#, 255
+     dim c#, 255
+     proAX_fpLoadFS(.Handle&, b#,c#)
+     .FSCmd$=@string$(b#,0)
+     .FSArgs$=@string$(c#,0)
+     dispose b#
+     dispose c#
+     return .FSCmd$
+endproc
+
+proc FlashPlayer.CountFSCommands
+     return proAX_fpIntnlCmd(.Handle&,~PAX_FPGETFSCCOUNT,0,0)
+endproc
+
+
+

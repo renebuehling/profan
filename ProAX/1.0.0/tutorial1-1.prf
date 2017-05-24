@@ -1,0 +1,21 @@
+$U ProAX.pcu = proAX.
+$H proAX.ph
+
+proAX.begin 'DLL laden
+cls rgb(255,0,0) 'Wichtig: Fenster erzeugen, sonst ist %HWND=0 und die Erzeugung klappt nicht...
+
+declare Ende%
+Popup "&Datei"
+AppendMenu 100,"&Ende"
+
+'--- Hauptschleife ---
+WhileNot Ende%
+  getmessage
+  if @menuItem(100)
+    ende%=1
+  EndIf
+EndWhile
+
+
+proAX.end 'DLL entladen
+

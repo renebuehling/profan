@@ -1,0 +1,25 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: mydll - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "D:\DOCUME~1\RENÉ\LOCALS~1\Temp\RSP272.tmp" with contents
+[
+kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /incremental:no /pdb:"Release/mydll.pdb" /machine:I386 /def:".\mydll.def" /out:"Release/mydll.dll" /implib:"Release/mydll.lib" 
+.\Release\mydll.obj
+]
+Creating command line "link.exe @"D:\DOCUME~1\RENÉ\LOCALS~1\Temp\RSP272.tmp""
+<h3>Output Window</h3>
+Linking...
+   Creating library Release/mydll.lib and object Release/mydll.exp
+
+
+
+<h3>Results</h3>
+mydll.dll - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

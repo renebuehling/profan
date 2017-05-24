@@ -1,0 +1,14 @@
+$H messages.ph
+
+cls
+
+declare ende%
+Popup "&Datei"
+AppendMenu 100,"&Ende"
+
+WhileNot Ende%
+getmessage
+if @menuItem(100) 
+ende%=1
+EndIf
+EndWhile

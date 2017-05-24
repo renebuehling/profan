@@ -1,0 +1,155 @@
+$U ProAX.pcu = proAX.
+$H windows.ph
+$H messages.ph
+$H proAX.ph
+
+proAX.begin 'DLL laden
+
+cls rgb(255,0,0) 'Wichtig: Fenster erzeugen, sonst ist %HWND=0 und die Erzeugung klappt nicht...
+
+
+declare fp1#, fp2#
+
+fp1# = New(FlashPlayer,%HWND) 'Filmviewer erzeugen
+setWindowpos fp1#.handle& = 0,0 - @width(%hwnd),@height(%hwnd)
+'Bug: Der Resize wird erst vollzogen, wenn ein MausDown erfolgte.
+'Workaround mit explizitem Senden des Ereignisses:
+sendmessage(fp1#.handle&,~wm_LButtonDown,0,0)
+
+fp1#.loadMovieNum(@GetDir$("@")+"\\beispiel.swf") 'Einen Beispielfilm laden
+fp1#.SetListener(%HWND) 'unser Hauptfenster soll bei fsCommand() benachrichtigt werden
+
+
+'--- Fensterelemente, ... ---
+        declare infobox%, lb%, lb2%, lb3%, lb4%, lb5%, totalframes%
+        infobox%=create("dialog",%hwnd,"Info",600,100,300,200)
+        lb%=create("text",infobox%,"Akt. Frame:",0,0,300,20)
+        lb2%=create("text",infobox%,"Film angehalten",0,20,300,20)
+        lb3%=create("text",infobox%,"Status: ?",0,40,300,20)
+        lb4%=create("text",infobox%,"Geladen: 0%",0,60,300,20)
+        lb5%=create("text",infobox%,"FSCommands in Queue: 0",0,80,300,20)
+        
+        declare ende%, name$, tmp$
+          Popup "&Datei"
+            AppendMenu 101,"Ö&ffnen"
+            Separator
+            AppendMenu 199,"&Ende"
+          Popup "&Film"
+            AppendMenu 201, "&Play"
+            AppendMenu 202, "&Stop"
+            AppendMenu 203, "&Gehe zu Frame..."
+            Separator
+            AppendMenu 204, "&Loopen"
+            CheckMenu 204, 1
+            AppendMenu 205, "Großes Flash&menü"
+            CheckMenu 205, 1
+            Separator
+            SubPopUp "&Qualität"
+               AppendMenu 207, "&Hoch"
+               AppendMenu 208, "&Niedrig"
+               CheckMenu 207, 1
+            EndSub
+            SubPopUp "&Skalierung"
+               AppendMenu 209, "Alles zeigen"
+               AppendMenu 210, "Kein Rand"
+               AppendMenu 211, "Exakte Anpassung"
+               AppendMenu 212, "Keine Skalierung"
+               CheckMenu 209,1
+            EndSub
+            SubPopUp "&Zoom"
+               AppendMenu 213, "Hineinzoomen (200%)"
+               AppendMenu 214, "Herauszoomen (50%)"
+               AppendMenu 220, "Ansicht um -100 Pixel verschieben"
+               AppendMenu 221, "Ansicht um +100 Pixel verschieben"
+            EndSub
+            AppendMenu 222, "Variable setzen"
+
+'--- Hauptschleife ---
+  WhileNot Ende%
+    getmessage
+
+    if fp1#.CountFSCommands() > 0
+       'Es ginge theoretisch auch mit "if %message=(~WM_USER+100)", jedoch kommen dabei oft Messages nicht an.
+       fp1#.getNextFSCommand()
+       messagebox("Kommando: \n"+fp1#.fsCmd$+"\nArgumente:\n"+fp1#.fsArgs$,"",0)
+    endif
+    
+    
+    totalframes%=fp1#.GetTotalFrames()
+    SetText lb%,"Akt. Frame: "+@str$(fp1#.getCurrentFrame())+"/"+str$(totalframes%)
+    if fp1#.getPlay()
+       SetText lb2%,"Film läuft"
+    Else
+       SetText lb2%, "Film angehalten"
+    EndIf
+    SetText lb3%,"ReadyState: "+@str$(fp1#.getReadyState())
+    SetText lb4%,"Geladen: "+@str$(fp1#.getPercentLoaded())+"%"
+    SetText lb5%,"FSCommands in Queue: "+@str$(fp1#.CountFSCommands())
+
+'hier weiter: fscommand implementieren/testen
+    If @menuItem(101)
+      name$ = @LoadFile$("Flashfilm laden","Flash-Filme (*.swf)|*.swf|Grafiken (*.jpg; *.png)|*.jpg;*.png")
+      If not(name$="")
+         fp1#.loadMovieNum(name$,0)
+      EndIf
+    ElseIf @menuItem(199)
+      ende%=1
+    ElseIf @menuItem(201)
+      fp1#.play();
+    ElseIf @menuItem(202)
+      fp1#.Stop();
+    ElseIf @menuItem(203)
+      tmp$=@Input$("Frame-Nr eingeben:", "", "0")
+      if tmp$<>""
+         fp1#.GotoAndStop(Val(tmp$))
+      endif
+    ElseIf @menuItem(204)
+        fp1#.SetLoop(not(fp1#.GetLoop()))
+        checkmenu 204, fp1#.GetLoop()
+    ElseIf @menuItem(205)
+        fp1#.SetMenu(not(fp1#.GetMenu()))
+        checkmenu 205, fp1#.GetMenu()
+    ElseIf @menuItem(207)
+        checkmenu 207, 1
+        checkmenu 208, 0
+        fp1#.setQuality(~pax_fpHigh)
+    ElseIf @menuItem(208)
+        checkmenu 207, 0
+        checkmenu 208, 1
+        fp1#.setQuality(~pax_fpLow)
+    ElseIf (%menuitem>=209) and (%menuitem<=212)
+        checkmenu 209, (%menuitem=209)
+        checkmenu 210, (%menuitem=210)
+        checkmenu 211, (%menuitem=211)
+        checkmenu 212, (%menuitem=212)
+        If @MenuItem(209)
+           fp1#.setScale(~pax_fpShowAll)
+        ElseIf @MenuItem(210)
+           fp1#.setScale(~pax_fpNoBorder)
+        ElseIf @MenuItem(211)
+           fp1#.setScale(~pax_fpExactFit)
+        ElseIf @MenuItem(212)
+           fp1#.setScale(~pax_fpNoScale)
+        EndIf
+    ElseIf @MenuItem(213)
+        fp1#.zoom(50)
+    ElseIf @MenuItem(214)
+        fp1#.zoom(200)
+    ElseIf @MenuItem(220)
+        fp1#.pan(-100,-100,~pax_fpPixel)
+    ElseIf @MenuItem(221)
+        fp1#.pan(100,100,~pax_fpPixel)
+    ElseIf @menuItem(222)
+      tmp$=@Input$("Text eingeben:", "", "Blablabla")
+      if tmp$<>""
+         fp1#.SetVar("myVar",tmp$)
+      endif
+    EndIf
+    SetMenuitem 0
+  EndWhile
+  
+fp1#.destroy() 'explizites löschen und freigeben des flashplayers; hier nicht zwingend erforderlich, beim programmende wird eh alles gelöscht
+dispose fp1#
+
+proAX.end 'DLL entladen
+

@@ -1,0 +1,192 @@
+''$U ProAX.pcu = proAX.
+$H windows.ph
+$H messages.ph
+$H proAX.ph
+$I proAX75.inc
+
+proAX_begin 'DLL laden
+
+cls rgb(255,0,0) 'Wichtig: Fenster erzeugen, sonst ist %HWND=0 und die Erzeugung klappt nicht...
+
+
+declare fp1#, fp2#
+
+
+'fp1# =
+
+FP_FlashPlayer %HWND 'Filmviewer erzeugen
+setWindowpos FP_handle& = 0,0 - @width(%hwnd),@height(%hwnd)
+'Bug: Der Resize wird erst vollzogen, wenn ein MausDown erfolgte.
+'Workaround mit explizitem Senden des Ereignisses:
+sendmessage(FP_handle&,~wm_LButtonDown,0,0)
+
+FP_loadMovieNum @GetDir$("@")+"\\beispiel.swf" 'Einen Beispielfilm laden
+FP_SetListener %HWND 'unser Hauptfenster soll bei fsCommand() benachrichtigt werden
+
+
+'--- Fensterelemente, ... ---
+        declare infobox%, lb%, lb2%, lb3%, lb4%, lb5%, lb6%, totalframes%
+        infobox%=create("dialog",%hwnd,"Info",600,100,300,200)
+        lb%=create("text",infobox%,"Akt. Frame:",0,0,300,20)
+        lb2%=create("text",infobox%,"Film angehalten",0,20,300,20)
+        lb3%=create("text",infobox%,"Status: ?",0,40,300,20)
+        lb4%=create("text",infobox%,"Geladen: 0%",0,60,300,20)
+        lb5%=create("text",infobox%,"FSCommands in Queue: 0",0,80,300,20)
+        lb6%=create("text",infobox%,"Player-Versionen: ",0,100,300,20)
+
+        declare version&, max%
+        version& = 1
+        while version& < 10
+              let version& = @add(version&,1)
+              proAX_supportsFP version&
+              if (@&(0))=1
+                 settext lb6%, gettext$(lb6%)+str$(version&)+","
+              endif
+        wend
+        settext lb6%, Left$(gettext$(lb6%),len(gettext$(lb6%))-1)
+
+        version&=0
+        while version& < 10
+              let version&=@add(version&,1)
+              proAX_supportsFP version&
+              if @&(0)=1
+                 max%=version&
+              endif
+        wend
+        MessageBox("Das System unterstützt Flashfilme bis Version "+str$(max%)+".","",0)
+
+
+        declare ende%, name$, tmp$
+          Popup "&Datei"
+            AppendMenu 101,"Ö&ffnen"
+            Separator
+            AppendMenu 199,"&Ende"
+          Popup "&Film"
+            AppendMenu 201, "&Play"
+            AppendMenu 202, "&Stop"
+            AppendMenu 203, "&Gehe zu Frame..."
+            Separator
+            AppendMenu 204, "&Loopen"
+            CheckMenu 204, 1
+            AppendMenu 205, "Großes Flash&menü"
+            CheckMenu 205, 1
+            Separator
+            SubPopUp "&Qualität"
+               AppendMenu 207, "&Hoch"
+               AppendMenu 208, "&Niedrig"
+               CheckMenu 207, 1
+            EndSub
+            SubPopUp "&Skalierung"
+               AppendMenu 209, "Alles zeigen"
+               AppendMenu 210, "Kein Rand"
+               AppendMenu 211, "Exakte Anpassung"
+               AppendMenu 212, "Keine Skalierung"
+               CheckMenu 209,1
+            EndSub
+            SubPopUp "&Zoom"
+               AppendMenu 213, "Hineinzoomen (200%)"
+               AppendMenu 214, "Herauszoomen (50%)"
+               AppendMenu 220, "Ansicht um -100 Pixel verschieben"
+               AppendMenu 221, "Ansicht um +100 Pixel verschieben"
+            EndSub
+            AppendMenu 222, "Variable setzen"
+
+'--- Hauptschleife ---
+  WhileNot Ende%
+    getmessage
+
+    FP_CountFSCommands
+    if @%(0) > 0
+       'Es ginge theoretisch auch mit "if %message=(~WM_USER+100)", jedoch kommen dabei oft Messages nicht an.
+       FP_getNextFSCommand
+       messagebox("Kommando: \n"+FP_fsCmd$+"\nArgumente:\n"+FP_fsArgs$,"",0)
+    endif
+
+
+    FP_GetTotalFrames
+    totalframes%=@%(0)
+    FP_getCurrentFrame
+    SetText lb%,"Akt. Frame: "+@str$(@%(0))+"/"+str$(totalframes%)
+    FP_getPlay
+    if @%(0)
+       SetText lb2%,"Film läuft"
+    Else
+       SetText lb2%, "Film angehalten"
+    EndIf
+    FP_getReadyState
+    SetText lb3%,"ReadyState: "+@str$(@%(0))
+    FP_getPercentLoaded
+    SetText lb4%,"Geladen: "+@str$(@%(0))+"%"
+    FP_CountFSCommands
+    SetText lb5%,"FSCommands in Queue: "+@str$(@%(0))
+
+    If @menuItem(101)
+      name$ = @LoadFile$("Flashfilm laden","Flash-Filme (*.swf)|*.swf|Grafiken (*.jpg; *.png)|*.jpg;*.png")
+      If not(name$="")
+         FP_loadMovieNum name$,0
+      EndIf
+    ElseIf @menuItem(199)
+      ende%=1
+    ElseIf @menuItem(201)
+      FP_play
+    ElseIf @menuItem(202)
+      FP_Stop
+    ElseIf @menuItem(203)
+      tmp$=@Input$("Frame-Nr eingeben:", "", "0")
+      if tmp$<>""
+         FP_GotoAndStop Val(tmp$)
+      endif
+    ElseIf @menuItem(204)
+        FP_GetLoop
+        FP_SetLoop not(@%(0))
+        FP_GetLoop
+        checkmenu 204, @%(0)
+    ElseIf @menuItem(205)
+        FP_GetMenu
+        FP_SetMenu not(@%(0))
+        FP_GetMenu
+        checkmenu 205, @%(0)
+    ElseIf @menuItem(207)
+        checkmenu 207, 1
+        checkmenu 208, 0
+        FP_setQuality ~pax_fpHigh
+    ElseIf @menuItem(208)
+        checkmenu 207, 0
+        checkmenu 208, 1
+        FP_setQuality ~pax_fpLow
+    ElseIf (%menuitem>=209) and (%menuitem<=212)
+        checkmenu 209, (%menuitem=209)
+        checkmenu 210, (%menuitem=210)
+        checkmenu 211, (%menuitem=211)
+        checkmenu 212, (%menuitem=212)
+        If @MenuItem(209)
+           FP_setScale ~pax_fpShowAll
+        ElseIf @MenuItem(210)
+           FP_setScale ~pax_fpNoBorder
+        ElseIf @MenuItem(211)
+           FP_setScale ~pax_fpExactFit
+        ElseIf @MenuItem(212)
+           FP_setScale ~pax_fpNoScale
+        EndIf
+    ElseIf @MenuItem(213)
+        FP_zoom 50
+    ElseIf @MenuItem(214)
+        FP_zoom 200
+    ElseIf @MenuItem(220)
+        FP_pan -100,-100,~pax_fpPixel
+    ElseIf @MenuItem(221)
+        FP_pan 100,100,~pax_fpPixel
+    ElseIf @menuItem(222)
+      tmp$=@Input$("Text eingeben:", "", "Blablabla")
+      if tmp$<>""
+         FP_SetVar "myVar",tmp$
+      endif
+    EndIf
+    SetMenuitem 0
+  EndWhile
+
+FP_destroy 'explizites löschen und freigeben des flashplayers; hier nicht zwingend erforderlich, beim programmende wird eh alles gelöscht
+dispose fp1#
+
+proAX_end 'DLL entladen
+

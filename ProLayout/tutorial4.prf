@@ -1,0 +1,36 @@
+$H messages.ph
+$U ProLayout.pcu = prolayout.
+$H prolayout.ph
+prolayout.begin
+
+cls
+
+declare frameset1#, frameset2#
+
+frameset1# = New(Frameset,%HWND, ~fsHorizontal, 200, ~fstRootSet) 'Hauptpanel erzeugen
+setwindowpos frameset1#.handle&=0,0-width(%hwnd), height(%hwnd) 'Auf Fenstergröße
+
+'Verschachteltes Frameset erzeugen und dem dynamischen Frame (~fstDynamicSubSet)
+'von frameset1 hinzufügen.
+'Wichtig: Richtiges Handle übergeben (handle& des übergeordneten Framesets), ~fst*SubSet verwenden
+frameset2# = New(Frameset,frameset1#.handle&, ~fsVertical, 200, ~fstDynamicSubSet)
+
+declare button%
+button%=Create("Button",frameset2#.getFrameHandle(~fidStatic), "Schließen", 10,10,100,20); 'Einen Button aufs Panel
+
+declare ende%
+Popup "&Datei"
+AppendMenu 100,"&Ende"
+
+WhileNot Ende%
+getmessage
+setwindowpos frameset1#.handle&=0,0-width(%hwnd), height(%hwnd) 'Auf Fenstergröße
+if @getfocus(button%)
+   inc ende%
+endif
+if @menuItem(100) 
+ende%=1
+EndIf
+EndWhile
+
+prolayout.end 'Wichtig: Speicher freigeben, ...

@@ -1,0 +1,37 @@
+Def test(0) !"mydll.dll","test"
+Def xset(1) !"mydll.dll","xset"
+Def xget(0) !"mydll.dll","xget"
+Def xprint(1) !"mydll.dll","print"
+
+declare dll%,str$
+
+dll%=usedll("mydll.dll")
+cls
+
+print test()
+print
+print "set 9999:", xset(9999)
+print 
+print "get:", xget()
+print
+'str$="1234"
+'print "vorher:",str$
+'print " return:", xprint(addr(str$))
+'print
+'print "nachher: ",str$
+'print
+'print
+
+declare b#
+dim b#,255
+String b#,0="TEST"
+print "vorher:",string$(b#,0)
+print " return:",xprint(b#),""
+print "nachher:",string$(b#,0)
+dispose b#
+
+waitinput
+
+end
+
+freedll dll%

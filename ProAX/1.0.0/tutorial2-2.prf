@@ -1,0 +1,42 @@
+$U ProAX.pcu = proAX.
+$H proAX.ph
+$H messages.ph
+
+proAX.begin 'DLL laden
+cls rgb(255,0,0) 'Wichtig: Fenster erzeugen, sonst ist %HWND=0 und die Erzeugung klappt nicht...
+
+
+declare flash1#
+
+flash1# = New(FlashPlayer,%HWND) 'Filmviewer erzeugen
+setWindowpos flash1#.handle& = 0,0 - @width(%hwnd),@height(%hwnd)
+'Bug: Der Resize wird erst vollzogen, wenn ein MausDown erfolgte.
+'Workaround mit explizitem Senden des Ereignisses:
+sendmessage(flash1#.handle&,~wm_LButtonDown,0,0)
+flash1#.loadMovieNum(@GetDir$("@")+"\\button.swf") 'Einen Beispielfilm laden
+
+declare Ende%
+Popup "&Datei"
+AppendMenu 100,"&Ende"
+
+'--- Hauptschleife ---
+WhileNot Ende%
+  getmessage
+  
+  if flash1#.CountFSCommands() > 0 'Liegen Befehle vor?
+    flash1#.getNextFSCommand() 'Befehl abholen
+    if (flash1#.fsCmd$="meinBefehl") 'Ist es meinBefehl?
+      messagebox(flash1#.fsArgs$,"Flash sagt:",0) 'meinBefehl soll eine Messagebox mit den Parametern zeigen!
+    endif
+  endif
+  
+  if @menuItem(100)
+    ende%=1
+  EndIf
+EndWhile
+
+flash1#.Destroy() 'explizites löschen und freigeben des flashplayers; hier nicht zwingend erforderlich, beim programmende wird eh alles gelöscht
+dispose flash1#
+
+proAX.end 'DLL entladen
+

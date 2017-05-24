@@ -1,0 +1,12 @@
+; dll_mfc_test.def : Deklariert die Modul-Parameter für die DLL.
+
+LIBRARY      "myDll"
+;DESCRIPTION  'myDll Windows Dynamic Link Library'
+
+EXPORTS
+	test
+	xset
+	xget
+	print
+
+; Explizite Exporte können hier eingefügt werden

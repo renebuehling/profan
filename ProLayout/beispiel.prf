@@ -1,0 +1,52 @@
+$U ProLayout.pcu = prolayout.
+$H messages.ph
+$H prolayout.ph
+
+prolayout.begin
+
+cls 'Wichtig: Fenster erzeugen, sonst ist %HWND=0 und das Panel wird nicht richtig erzeugt.
+
+'Probleme: Button auf Panel löst kein Profan-Event aus;
+
+declare frameset1#, frameset2#, frameset3#
+
+frameset1# = New(Frameset,%HWND, ~fsHorizontal, 200, ~fstRootSet) 'Hauptpanel erzeugen
+b&=frameset1#.handle&
+setwindowpos frameset1#.handle&=0,0-width(%hwnd), height(%hwnd) 'Auf Fenstergröße
+
+frameset1#.setBorder(~fidStatic,~fbsUp)
+frameset1#.setColor(~fidStatic,rgb(255,255,0))
+
+'Unterpanel
+frameset2#=New(Frameset,frameset1#.handle&,~fsVertical,-50, ~fstDynamicSubSet)
+frameset2#.setColor(~fidDynamic,rgb(255,0,255));
+'frameset2#.setBorder(~fidDynamic,~fbsNone);
+
+frameset3#=New(Frameset,frameset2#.handle&,~fsHorizontal,-100, ~fstDynamicSubSet)
+frameset3#.setColor(~fidDynamic,rgb(255,0,0));
+frameset3#.setColor(~fidStatic,rgb(0,255,255));
+
+declare button%, checkbox%
+button%=Create("Button",frameset2#.getFrameHandle(~fidStatic), "Schließen", 10,10,100,20); 'Einen Button aufs Panel
+checkbox%=Create("Checkbox",frameset3#.getFrameHandle(~fidStatic), "Info", 10,10,60,20);
+
+
+declare ende%
+  Popup "&Datei"
+  AppendMenu 100,"&Ende"
+
+  WhileNot Ende%
+    getmessage
+    if %message = 160 'irgendwie klappt das mit wm_size nicht???
+      setwindowpos frameset1#.handle&=0,0-width(%hwnd), height(%hwnd) 'An Fenstergröße anpassen
+    endif
+    if @getfocus(button%) | @menuItem(100) 'es muss mit getmessage und getfocus gearbeitet werden, da sonst der button nicht mehr reagiert???
+       if @GetCheck(checkbox%)
+       MessageBox("Tschö!","",0);
+       endif
+      ende%=1
+    EndIf
+  EndWhile
+
+prolayout.end 'Wichtig: Speicher freigeben, ...
+
